@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from typing import List
-from models.schemas import User, UserCreate
-from services.user import UserStore
 from pydantic import ValidationError
-from core.dependencies import get_current_user, get_current_active_user
-from core.limiter import limiter
 from uuid import UUID
+
+from ..models.schemas import User, UserCreate
+from ..services.user import UserStore
+from ..core.dependencies import get_current_user, get_current_active_user
+from ..core.limiter import limiter
 
 router = APIRouter(prefix="/users", tags=["users"])
 

@@ -1,11 +1,12 @@
 from fastapi import Depends, HTTPException, status
 from jose import JWTError
 from uuid import UUID
-from core.security import oauth2_scheme
-from core.config import settings
-from models.schemas import TokenData, User
-from services.user import UserStore
 from jose import jwt
+
+from .security import oauth2_scheme
+from .config import settings
+from ..services.user import UserStore
+from ..models.schemas import TokenData, User
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:

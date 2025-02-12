@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from models.schemas import Movie, MovieCreate
-from services.movie import MovieStore
-from services.user import UserStore, User
-from core.dependencies import get_current_user
-from core.limiter import limiter
 from uuid import UUID
 from typing import List
+
+from ..models.schemas import Movie, MovieCreate
+from ..services.movie_s import MovieStore
+from ..services.user import UserStore, User
+from ..core.dependencies import get_current_user
+from ..core.limiter import limiter
 
 router = APIRouter(prefix="/users/{user_id}/movies", tags=["movies"])
 

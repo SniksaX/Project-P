@@ -1,6 +1,7 @@
 import psycopg2
 from psycopg2 import sql
-from core.config import settings
+
+from .config import settings
 
 
 class DatabaseManager:

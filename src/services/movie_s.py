@@ -1,11 +1,12 @@
 from uuid import UUID, uuid4
 from datetime import datetime
 from typing import List
-from core.database import DatabaseManager
-from models.schemas import MovieCreate, Movie
 from fastapi import HTTPException, status
 import psycopg2
 from psycopg2 import sql
+
+from ..core.database import DatabaseManager
+from ..models.schemas import MovieCreate, Movie
 
 
 class MovieStore:

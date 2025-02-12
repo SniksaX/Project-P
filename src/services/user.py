@@ -1,26 +1,44 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import Optional, List
-from core.database import DatabaseManager
-from models.schemas import UserCreate, User, UserInDB
-from core.security import get_password_hash, verify_password
 from fastapi import HTTPException, status
 import psycopg2
 from psycopg2 import sql
 
+from ..core.database import DatabaseManager
+from ..models.schemas import UserCreate, User, UserInDB
+from ..core.security import get_password_hash, verify_password
+from ..services.email_s import EmailService
+
 
 class UserStore:
     @classmethod
-    def add_user(cls, user_create: UserCreate) -> User:
+    async def add_user(cls, user_create: UserCreate) -> User:
         hashed_password = get_password_hash(user_create.password)
-        new_user = User(**user_create.model_dump())
+        verification_token = str(uuid4())
+        new_user = User(
+            **user_create.model_dump(),
+            is_verified=False,
+            verification_token=verification_token
+        )
+
         query = sql.SQL("""
-            INSERT INTO userinfo.users (name, email, password, id)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO userinfo.users (name, email, password, id, is_verified, verification_token)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """)
-        params = (new_user.name, new_user.email,
-                  hashed_password, str(new_user.id))
+        params = (
+            new_user.name,
+            new_user.email,
+            hashed_password,
+            str(new_user.id),
+            False,
+            verification_token
+        )
+
         try:
             DatabaseManager.execute_query(query, params)
+            # Send verification email
+            await EmailService.send_verification_email(new_user.email, verification_token)
+            return new_user
         except psycopg2.IntegrityError as e:
             if e.pgcode == '23505' and e.diag.constraint_name == 'users_email_key':
                 raise HTTPException(
@@ -37,7 +55,6 @@ class UserStore:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database operation failed"
             )
-        return new_user
 
     @classmethod
     def get_user_info(cls, user_id: UUID) -> User:
@@ -72,3 +89,28 @@ class UserStore:
         query = sql.SQL("DELETE FROM userinfo.users WHERE id = %s")
         params = (str(user_id),)
         DatabaseManager.execute_query(query, params)
+
+    @classmethod
+    def verify_email(cls, token: str) -> bool:
+        query = sql.SQL("""
+            UPDATE userinfo.users 
+            SET is_verified = true, verification_token = NULL 
+            WHERE verification_token = %s 
+            RETURNING id
+        """)
+        result = DatabaseManager.execute_query(query, (token,), fetch=True)
+        return bool(result)
+
+    @classmethod
+    def authenticate_user(cls, email: str, password: str):
+        user = cls.get_user_by_email(email)
+        if not user:
+            return None
+        if not verify_password(password, user.hashed_password):
+            return None
+        if not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Please verify your email before logging in"
+            )
+        return user

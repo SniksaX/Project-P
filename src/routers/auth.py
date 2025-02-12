@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Body, HTTPException, status
-from models.schemas import Token, TokenRequest
-from core.security import verify_password
-from core.security import create_access_token
-from services.user import UserStore
-from core.limiter import limiter
 from datetime import timedelta
+
+from ..models.schemas import Token, TokenRequest, User, UserCreate
+from ..core.security import verify_password
+from ..core.security import create_access_token
+from ..services.user import UserStore
+from ..core.limiter import limiter
 
 router = APIRouter(tags=["auth"])
 
@@ -29,3 +30,26 @@ async def login_for_access_token(token_request: TokenRequest = Body(...)):
         data={"sub": str(user_in_db.id)}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/verify-email")
+async def verify_email(token: str):
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token"
+        )
+
+    verified = UserStore.verify_email(token)
+    if not verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
+
+    return {"message": "Email verified successfully!"}
+
+
+@router.post("/users/", response_model=User)
+async def create_user(user: UserCreate):
+    return await UserStore.add_user(user)

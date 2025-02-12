@@ -36,6 +36,8 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: UUID = Field(default_factory=uuid4)
+    is_verified: bool = False
+    verification_token: Optional[str] = None
 
 
 class UserInDB(User):
