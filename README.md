@@ -17,13 +17,13 @@ This project is a FastAPI application that manages users and movies. It includes
 Clone the repository to your local machine using:
 
 ```bash
-git clone <repository-url>
+git clone <git@github.com:SniksaX/Project-P.git>
 ```
 
 ### 2. Navigate to the Project Directory
 
 ```bash
-cd pyhtonstuff
+cd Project-P
 ```
 
 ### 3. Create and Activate a Virtual Environment (Optional but Recommended)
@@ -135,3 +135,161 @@ The application will be accessible at [http://localhost:3000](http://localhost:3
 - Consult the [FastAPI documentation](https://fastapi.tiangolo.com/) and [PostgreSQL guides](https://www.postgresql.org/docs/) for more details on configuration and troubleshooting.
 
 Enjoy building and running your application!
+
+## API Endpoints
+
+Below is a list of all available endpoints and instructions on how to interact with them. For endpoints requiring authentication, include the header:
+
+```
+Authorization: Bearer <your_access_token>
+```
+
+### Authentication Endpoints (No authentication required)
+
+- **POST /token**
+
+  - Description: Authenticate a user and obtain a JWT token.
+  - Body (JSON):
+    ```json
+    {
+      "email": "user@example.com",
+      "password": "your_password"
+    }
+    ```
+  - Example:
+    ```bash
+    curl -X POST http://localhost:3000/token \
+         -H "Content-Type: application/json" \
+         -d '{"email": "user@example.com", "password": "your_password"}'
+    ```
+
+- **GET /verify-email**
+
+  - Description: Verify a user's email address using a token.
+  - Query Parameter: `token`
+  - Example:
+    ```bash
+    curl "http://localhost:3000/verify-email?token=<your_verification_token>"
+    ```
+
+- **POST /users/** (in auth router)
+  - Description: Create a new user.
+  - Body (JSON):
+    ```json
+    {
+      "name": "Your Name",
+      "email": "your_email@example.com",
+      "password": "your_password"
+    }
+    ```
+  - Example:
+    ```bash
+    curl -X POST http://localhost:3000/users/ \
+         -H "Content-Type: application/json" \
+         -d '{"name": "Your Name", "email": "your_email@example.com", "password": "your_password"}'
+    ```
+
+### User Endpoints (Require authentication)
+
+- **GET /users/**
+
+  - Description: Retrieve a list of all users.
+  - Example:
+    ```bash
+    curl -X GET http://localhost:3000/users/ \
+         -H "Authorization: Bearer <your_access_token>"
+    ```
+
+- **POST /users/**
+
+  - Description: Create a new user. This endpoint is similar to the one in the auth router.
+  - Body (JSON): Same as above.
+
+- **GET /users/{user_id}**
+
+  - Description: Retrieve details of a specific user by their UUID.
+  - Example:
+    ```bash
+    curl -X GET http://localhost:3000/users/<user_id> \
+         -H "Authorization: Bearer <your_access_token>"
+    ```
+
+- **DELETE /users/{user_id}**
+  - Description: Delete a user by their UUID.
+  - Example:
+    ```bash
+    curl -X DELETE http://localhost:3000/users/<user_id> \
+         -H "Authorization: Bearer <your_access_token>"
+    ```
+
+### Movie Endpoints (Require authentication)
+
+- **Note:** For the POST and GET endpoints below, ensure you include the query parameter `user_id` in the URL (e.g., `?user_id=<user_id>`), as required to specify the target user.
+
+- **POST /**
+
+  - Description: Create a new movie for a user. Requires a query parameter `user_id` and movie details in the body.
+  - Body (JSON):
+    ```json
+    {
+      "title": "Movie Title",
+      "description": "Movie Description",
+      "rating": 80,
+      "release_date": "YYYY-MM-DD",
+      "tmdb_id": 12345 // optional
+    }
+    ```
+  - Example:
+    ```bash
+    curl -X POST "http://localhost:3000/?user_id=<user_id>" \
+         -H "Authorization: Bearer <your_access_token>" \
+         -H "Content-Type: application/json" \
+         -d '{"title": "Movie Title", "description": "Movie Description", "rating": 80, "release_date": "2022-01-01"}'
+    ```
+
+- **GET /**
+
+  - Description: Retrieve a list of movies for a specific user. Requires a query parameter `user_id`.
+  - Example:
+    ```bash
+    curl -X GET "http://localhost:3000/?user_id=<user_id>" \
+         -H "Authorization: Bearer <your_access_token>"
+    ```
+
+- **GET /movies/search**
+
+  - Description: Search for movies using the TMDB API.
+  - Query Parameters:
+    - `query`: Search keyword
+    - `page`: (optional) Page number, default is 1
+  - Example:
+    ```bash
+    curl "http://localhost:3000/movies/search?query=batman&page=1" \
+         -H "Authorization: Bearer <your_access_token>"
+    ```
+
+- **GET /movies/{movie_id}**
+
+  - Description: Retrieve detailed information about a specific movie by its TMDB ID.
+  - Example:
+    ```bash
+    curl -X GET http://localhost:3000/movies/<movie_id> \
+         -H "Authorization: Bearer <your_access_token>"
+    ```
+
+- **POST /users/{user_id}/movies/{tmdb_movie_id}**
+
+  - Description: Add a movie from TMDB to a user's personal collection.
+  - Example:
+    ```bash
+    curl -X POST http://localhost:3000/users/<user_id>/movies/<tmdb_movie_id> \
+         -H "Authorization: Bearer <your_access_token>"
+    ```
+
+- **GET /users/{user_id}/movies**
+  - Description: Retrieve all movies in a user's personal collection.
+  - Example:
+    ```bash
+    curl -X GET http://localhost:3000/users/<user_id>/movies \
+         -H "Authorization: Bearer <your_access_token>"
+    ```
