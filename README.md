@@ -17,7 +17,7 @@ This project is a FastAPI application that manages users and movies. It includes
 Clone the repository to your local machine using:
 
 ```bash
-git clone <git@github.com:SniksaX/Project-P.git>
+git clone git@github.com:SniksaX/Project-P.git
 ```
 
 ### 2. Navigate to the Project Directory
