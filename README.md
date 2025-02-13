@@ -1,128 +1,137 @@
-# FastAPI User and Movie Management API
+# Project Setup Guide
 
-This project implements a RESTful API using FastAPI for managing users and their movies.  It includes features for user registration, authentication, movie creation, and retrieval, along with rate limiting and robust error handling.  It uses PostgreSQL for data persistence.
+This project is a FastAPI application that manages users and movies. It includes functionalities such as email verification, JWT authentication, and integration with the TMDB API for movie details.
 
-## Features
+## Prerequisites
 
-*   **User Registration:**  Allows new users to register with a name, email, and password (minimum 8 characters).  Handles duplicate email registration attempts.
-*   **User Authentication:** Implements token-based authentication using JWT (JSON Web Tokens).  Users can log in with their email and password to obtain an access token.
-*   **Protected Routes:**  Most endpoints require a valid JWT for access, ensuring only authenticated users can perform actions.  Uses `OAuth2PasswordBearer`.
-*   **User Management:**
-    *   Get all users (requires authentication).
-    *   Get a specific user by ID (requires authentication).
-    *   Delete a user by ID (requires authentication).
-*   **Movie Management:**
-    *   Create a movie associated with a specific user (requires authentication, and the user ID in the path must match the authenticated user).
-    *   Get a list of all movies associated with a specific user (requires authentication, and user ID validation).
-*   **Rate Limiting:**  Uses `slowapi` to limit the number of requests per minute for various endpoints, preventing abuse.
-*   **Data Validation:** Uses Pydantic models extensively for data validation, ensuring data integrity.
-*   **Database Interaction:**  Uses `psycopg2` to interact with a PostgreSQL database.  Database operations are handled through a `DatabaseManager` class.
-*   **Error Handling:**  Uses `HTTPException` to provide informative error responses for various scenarios (e.g., invalid credentials, database errors, validation errors, rate limits).
-*   **Password Hashing:**  Uses `passlib` with bcrypt to securely store user passwords.
+- Python 3.x installed (preferably Python 3.9+)
+- pip package manager
+- PostgreSQL (database must be installed and running)
+- A Gmail account for sending verification emails
+- Internet access for API calls (TMDB, email sending, etc.)
 
-## Setup and Installation
+## Steps to Set Up the Project
 
-1.  **Install Dependencies:**
+### 1. Clone the Repository
 
-    ```bash
-    pip install fastapi uvicorn psycopg2-binary pydantic python-jose[cryptography] passlib python-dotenv slowapi
-    ```
-2.  **Database Setup:**
+Clone the repository to your local machine using:
 
-    *   Install PostgreSQL.
-    *   Create a database `your_data_base_name`.
-    *   Create a user `username` with password .  **Change these credentials for your setup.**
-    *   Create a schema `your_schema_name`.
-    *   Create the `users` and `movies` tables within the `userinfo` schema:
+```bash
+git clone <repository-url>
+```
 
-        ```sql
-        CREATE SCHEMA userinfo;
+### 2. Navigate to the Project Directory
 
-        CREATE TABLE userinfo.users (
-            id UUID PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL
-        );
+```bash
+cd pyhtonstuff
+```
 
-        CREATE TABLE userinfo.movies (
-            id UUID PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
-            description TEXT,
-            rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 100),
-            release_date DATE NOT NULL,
-            user_id UUID REFERENCES userinfo.users(id),
-            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
-        );
-        ```
-3. **Configure Environment Variables (Optional but Recommended):**
-    *   Create a `.env` file in the project root.
-    *   Add the following line, replacing `"supersecretkey"` with a strong, randomly generated secret key:
-       ```
-       SECRET_KEY="supersecretkey"
-       ```
-    *   Uncomment lines referencing `config = config(".env")` in `config.py`
-4.  **Run the Application:**
+### 3. Create and Activate a Virtual Environment (Optional but Recommended)
 
-    ```bash
-    uvicorn main:app --host 0.0.0.0 --port 3000 --reload
-    ```
-    The `--reload` flag enables automatic reloading of the server when code changes are detected.
+Create the virtual environment:
 
-## API Endpoints
+```bash
+python -m venv venv
+```
 
-| Method | Endpoint                     | Description                                     | Authentication | Rate Limit |
-| :----- | :--------------------------- | :---------------------------------------------- | :------------- | :--------- |
-| POST   | `/users`                     | Create a new user.                               | No             | 3/minute   |
-| GET    | `/users`                     | Get all users.                                  | Yes            | 10/minute  |
-| GET    | `/users/{user_id}`           | Get a specific user by ID.                      | Yes            | 2/minute   |
-| DELETE | `/users/{user_id}`           | Delete a user by ID.                            | Yes            | 2/minute   |
-| POST   | `/token`                     | Login and get an access token.                  | No             | -          |
-| POST   | `/users/{user_id}/movies`    | Create a movie for a specific user.             | Yes            | 3/minute   |
-| GET    | `/users/{user_id}/movies`    | Get all movies for a specific user.              | Yes            | 5/minute   |
+Activate the environment:
 
-**Request and Response Models:**
+- On **Windows**:
+  ```bash
+  venv\Scripts\activate
+  ```
+- On **macOS/Linux**:
+  ```bash
+  source venv/bin/activate
+  ```
 
-*   **`UserCreate`:** `name` (str), `email` (str), `password` (str, min length 8)
-*   **`User`:** `id` (UUID), `name` (str), `email` (str)
-*   **`TokenRequest`:** `email` (str), `password` (str)
-*   **`Token`:** `access_token` (str), `token_type` (str, "bearer")
-*   **`MovieCreate`:** `title` (str), `description` (str, optional), `rating` (int, 1-100), `release_date` (date)
-*   **`Movie`:** `id` (UUID), `user_id` (UUID), `title` (str), `description` (str, optional), `rating` (int), `release_date` (date), `created_at` (datetime)
+### 4. Install Dependencies
 
-**Example Usage (using `curl`):**
+If a `requirements.txt` file exists, install the dependencies using:
 
-1.  **Create a User:**
+```bash
+pip install -r requirements.txt
+```
 
-    ```bash
-    curl -X POST -H "Content-Type: application/json" -d '{"name": "John Doe", "email": "john.doe@example.com", "password": "securepassword"}' http://localhost:3000/users
-    ```
+Otherwise, install the required packages manually.
 
-2.  **Get an Access Token:**
+### 5. Set Up the Database
 
-    ```bash
-     curl -X POST -H "Content-Type: application/json" -d '{"email": "john.doe@example.com", "password": "securepassword"}' http://localhost:3000/token
-    ```
+Ensure PostgreSQL is installed and running. Create a new database and a user with the necessary privileges. Update your database configuration in the environment variables (see next step) with your details:
 
-    This will return a JSON object like:
+- DATABASE_HOST
+- DATABASE_PORT
+- DATABASE_NAME
+- DATABASE_USER
+- DATABASE_PASSWORD
 
-    ```json
-    {
-      "access_token": "YOUR_ACCESS_TOKEN",
-      "token_type": "bearer"
-    }
-    ```
+### 6. Configure Environment Variables
 
-3.  **Create a Movie (replace `YOUR_ACCESS_TOKEN` and `{user_id}`):**
+Create a `.env` file in the root directory of the project with the following variables:
 
-    ```bash
-    curl -X POST -H "Authorization: Bearer YOUR_ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"title": "My Movie", "description": "A great movie", "rating": 85, "release_date": "2023-10-26"}' http://localhost:3000/users/{user_id}/movies
-    ```
+```env
+# Application Settings
+SECRET_KEY=your_supersecret_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-4.  **Get All Users (replace `YOUR_ACCESS_TOKEN`):**
-    ```bash
-    curl -X GET -H "Authorization: Bearer YOUR_ACCESS_TOKEN" http://localhost:3000/users
-    ```
-5. **Get movies for a user (replace `YOUR_ACCESS_TOKEN` and `{user_id}`):**
-   ```bash
-   curl -X GET -H "Authorization: Bearer YOUR_ACCESS_TOKEN" http://localhost:3000/users/{user_id}/movies
+# Database Configuration
+DATABASE_HOST=localhost
+DATABASE_PORT=3333
+DATABASE_NAME=your_database_name
+DATABASE_USER=your_database_user
+DATABASE_PASSWORD=your_database_password
+
+# Email Configuration
+EMAIL_FROM=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
+
+# Verification Token Settings
+VERIFICATION_TOKEN_EXPIRE_MINUTES=1440
+
+# TMDB API Credentials
+TMDB_API_KEY=your_tmdb_api_key
+TMDB_API_KEY_V4=your_tmdb_api_v4_key
+```
+
+#### Acquiring TMDB API Keys:
+
+1. Visit [The Movie Database (TMDB)](https://www.themoviedb.org) and create an account if you don't already have one.
+2. Navigate to your account settings and go to the [API section](https://www.themoviedb.org/settings/api).
+3. Request an API key. You will typically receive an API key (v3) and an API v4 token.
+4. Insert these keys into your `.env` file as `TMDB_API_KEY` and `TMDB_API_KEY_V4`.
+
+#### Setting Up Gmail for Sending Emails:
+
+1. Use a Gmail account to send verification emails.
+2. It is recommended to use an App Password instead of your regular Gmail password for security reasons.
+3. Enable 2-Step Verification on your Google account.
+4. Go to [Google App Passwords](https://myaccount.google.com/apppasswords) and generate an App Password for "Mail".
+5. Use the generated App Password as the value for `EMAIL_PASSWORD` in your `.env` file, and set `EMAIL_FROM` to your Gmail address.
+
+### 7. Running the Project
+
+Launch the FastAPI application using one of the following commands:
+
+Using Uvicorn:
+
+```bash
+uvicorn main:app --reload
+```
+
+Or run directly using Python:
+
+```bash
+python main.py
+```
+
+The application will be accessible at [http://localhost:3000](http://localhost:3000).
+
+## Troubleshooting & Additional Information
+
+- Ensure all placeholders in the `.env` file are replaced with your actual credentials.
+- Verify that your PostgreSQL database is properly set up and running.
+- Check your Gmail account settings if you experience issues with sending emails; ensure that the App Password is correctly configured.
+- Consult the [FastAPI documentation](https://fastapi.tiangolo.com/) and [PostgreSQL guides](https://www.postgresql.org/docs/) for more details on configuration and troubleshooting.
+
+Enjoy building and running your application!
