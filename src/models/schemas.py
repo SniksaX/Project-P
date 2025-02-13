@@ -49,6 +49,7 @@ class MovieBase(BaseModel):
     description: str | None = None
     rating: int = Field(..., ge=1, le=100)
     release_date: date
+    tmdb_id: int | None = None
 
 
 class MovieCreate(MovieBase):

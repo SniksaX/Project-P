@@ -12,11 +12,16 @@ from ..models.schemas import MovieCreate, Movie
 class MovieStore:
     @classmethod
     def add_movie(cls, movie_create: MovieCreate, user_id: UUID) -> Movie:
-        new_movie = Movie(**movie_create.model_dump(),
-                          user_id=user_id, id=uuid4(), created_at=datetime.now())
+        new_movie = Movie(
+            **movie_create.model_dump(),
+            user_id=user_id,
+            id=uuid4(),
+            created_at=datetime.now()
+        )
         query = sql.SQL("""
-            INSERT INTO userinfo.movies (id, title, description, rating, release_date, user_id)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO userinfo.movies 
+            (id, title, description, rating, release_date, user_id, tmdb_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """)
         params = (
             str(new_movie.id),
@@ -24,7 +29,8 @@ class MovieStore:
             new_movie.description,
             new_movie.rating,
             new_movie.release_date,
-            str(user_id)
+            str(user_id),
+            new_movie.tmdb_id
         )
         try:
             DatabaseManager.execute_query(query, params)
@@ -38,7 +44,7 @@ class MovieStore:
     @classmethod
     def get_movie_list(cls, user_id: UUID) -> List[Movie]:
         query = sql.SQL("""
-            SELECT id, title, description, rating, release_date, user_id, created_at
+            SELECT id, title, description, rating, release_date, user_id, created_at, tmdb_id
             FROM userinfo.movies
             WHERE user_id = %s
         """)
@@ -52,6 +58,7 @@ class MovieStore:
                 rating=result[3],
                 release_date=result[4],
                 user_id=UUID(result[5]),
-                created_at=result[6]
+                created_at=result[6],
+                tmdb_id=result[7]
             ) for result in results
         ]
